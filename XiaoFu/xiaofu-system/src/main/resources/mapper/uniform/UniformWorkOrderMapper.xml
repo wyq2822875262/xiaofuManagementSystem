@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformWorkOrderMapper">
+
+    <resultMap id="UniformWorkOrderResult" type="com.xiaofu.system.domain.uniform.UniformWorkOrder">
+        <id property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="sourceOrderNo" column="source_order_no"/>
+        <result property="schoolName" column="school_name"/>
+        <result property="styleId" column="style_id"/>
+        <result property="styleName" column="style_name"/>
+        <result property="materialBatchId" column="material_batch_id"/>
+        <result property="materialBatchNo" column="material_batch_no"/>
+        <result property="plannedQuantity" column="planned_quantity"/>
+        <result property="completedQuantity" column="completed_quantity"/>
+        <result property="codeMode" column="code_mode"/>
+        <result property="orderStatus" column="order_status"/>
+        <result property="qaStatus" column="qa_status"/>
+        <result property="traceStatus" column="trace_status"/>
+        <result property="traceGeneratedCount" column="trace_generated_count"/>
+        <result property="plannedStartDate" column="planned_start_date"/>
+        <result property="plannedEndDate" column="planned_end_date"/>
+        <result property="actualEndTime" column="actual_end_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectWorkOrderVo">
+        select
+            w.work_order_id,
+            w.work_order_no,
+            w.source_order_no,
+            w.school_name,
+            w.style_id,
+            s.style_name,
+            w.material_batch_id,
+            b.batch_no as material_batch_no,
+            w.planned_quantity,
+            w.completed_quantity,
+            w.code_mode,
+            w.order_status,
+            w.qa_status,
+            w.trace_status,
+            w.trace_generated_count,
+            w.planned_start_date,
+            w.planned_end_date,
+            w.actual_end_time,
+            w.create_by,
+            w.create_time,
+            w.update_by,
+            w.update_time,
+            w.remark
+        from xf_work_order w
+        left join xf_uniform_style s on w.style_id = s.style_id
+        left join xf_material_batch b on w.material_batch_id = b.batch_id
+    </sql>
+
+    <select id="selectWorkOrderById" parameterType="Long" resultMap="UniformWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        where w.work_order_id = #{workOrderId}
+    </select>
+
+    <select id="selectWorkOrderList" parameterType="com.xiaofu.system.domain.uniform.UniformWorkOrder" resultMap="UniformWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        <where>
+            <if test="workOrderNo != null and workOrderNo != ''">
+                and w.work_order_no like concat('%', #{workOrderNo}, '%')
+            </if>
+            <if test="sourceOrderNo != null and sourceOrderNo != ''">
+                and w.source_order_no like concat('%', #{sourceOrderNo}, '%')
+            </if>
+            <if test="schoolName != null and schoolName != ''">
+                and w.school_name like concat('%', #{schoolName}, '%')
+            </if>
+            <if test="styleId != null">
+                and w.style_id = #{styleId}
+            </if>
+            <if test="materialBatchId != null">
+                and w.material_batch_id = #{materialBatchId}
+            </if>
+            <if test="orderStatus != null and orderStatus != ''">
+                and w.order_status = #{orderStatus}
+            </if>
+            <if test="qaStatus != null and qaStatus != ''">
+                and w.qa_status = #{qaStatus}
+            </if>
+            <if test="traceStatus != null and traceStatus != ''">
+                and w.trace_status = #{traceStatus}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(w.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(w.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by w.create_time desc
+    </select>
+
+    <select id="checkWorkOrderNoUnique" parameterType="String" resultMap="UniformWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        where w.work_order_no = #{workOrderNo}
+        limit 1
+    </select>
+
+    <insert id="insertWorkOrder" parameterType="com.xiaofu.system.domain.uniform.UniformWorkOrder" useGeneratedKeys="true" keyProperty="workOrderId">
+        insert into xf_work_order(
+            work_order_no,
+            source_order_no,
+            school_name,
+            style_id,
+            material_batch_id,
+            planned_quantity,
+            completed_quantity,
+            code_mode,
+            order_status,
+            qa_status,
+            trace_status,
+            trace_generated_count,
+            planned_start_date,
+            planned_end_date,
+            actual_end_time,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{workOrderNo},
+            #{sourceOrderNo},
+            #{schoolName},
+            #{styleId},
+            #{materialBatchId},
+            #{plannedQuantity},
+            #{completedQuantity},
+            #{codeMode},
+            #{orderStatus},
+            #{qaStatus},
+            #{traceStatus},
+            #{traceGeneratedCount},
+            #{plannedStartDate},
+            #{plannedEndDate},
+            #{actualEndTime},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateWorkOrder" parameterType="com.xiaofu.system.domain.uniform.UniformWorkOrder">
+        update xf_work_order
+        <set>
+            work_order_no = #{workOrderNo},
+            source_order_no = #{sourceOrderNo},
+            school_name = #{schoolName},
+            style_id = #{styleId},
+            material_batch_id = #{materialBatchId},
+            planned_quantity = #{plannedQuantity},
+            code_mode = #{codeMode},
+            planned_start_date = #{plannedStartDate},
+            planned_end_date = #{plannedEndDate},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where work_order_id = #{workOrderId}
+    </update>
+
+    <update id="updateWorkOrderFlowFields">
+        update xf_work_order
+        set
+            completed_quantity = #{completedQuantity},
+            order_status = #{orderStatus},
+            qa_status = #{qaStatus},
+            trace_status = #{traceStatus},
+            trace_generated_count = #{traceGeneratedCount},
+            actual_end_time = #{actualEndTime},
+            update_time = sysdate()
+        where work_order_id = #{workOrderId}
+    </update>
+
+    <delete id="deleteWorkOrderByIds" parameterType="Long">
+        delete from xf_work_order where work_order_id in
+        <foreach collection="array" item="workOrderId" open="(" separator="," close=")">
+            #{workOrderId}
+        </foreach>
+    </delete>
+
+    <select id="selectAvailableWorkOrderOptions" resultMap="UniformWorkOrderResult">
+        <include refid="selectWorkOrderVo"/>
+        order by w.create_time desc
+    </select>
+
+</mapper>

@@ -17,6 +17,19 @@ export * from "./system/dict";
 export * from "./system/config";
 export * from "./system/notice";
 
+// uniform 模块
+export * from "./uniform/supplier";
+export * from "./uniform/style";
+export * from "./uniform/material";
+export * from "./uniform/workorder";
+export * from "./uniform/inspection";
+export * from "./uniform/trace";
+export * from "./uniform/measure";
+export * from "./uniform/shipment";
+export * from "./uniform/rma";
+export * from "./uniform/portal";
+export * from "./uniform/screen";
+
 // monitor 模块
 export * from "./monitor/cache";
 export * from "./monitor/job";

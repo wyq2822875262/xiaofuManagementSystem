@@ -48,6 +48,12 @@ export const constantRoutes = [
     hidden: true
   },
   {
+    path: '/portal/trace/:traceCode?',
+    component: () => import('@/views/portal/trace.vue'),
+    hidden: true,
+    meta: { title: '校服数字档案' }
+  },
+  {
     path: "/:pathMatch(.*)*",
     component: () => import('@/views/error/404.vue'),
     hidden: true

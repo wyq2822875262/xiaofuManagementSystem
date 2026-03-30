@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformRmaOrderMapper">
+
+    <resultMap id="UniformRmaOrderResult" type="com.xiaofu.system.domain.uniform.UniformRmaOrder">
+        <id property="rmaId" column="rma_id"/>
+        <result property="rmaNo" column="rma_no"/>
+        <result property="traceId" column="trace_id"/>
+        <result property="traceCode" column="trace_code"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="styleName" column="style_name"/>
+        <result property="schoolName" column="school_name"/>
+        <result property="className" column="class_name"/>
+        <result property="studentName" column="student_name"/>
+        <result property="requestType" column="request_type"/>
+        <result property="reasonType" column="reason_type"/>
+        <result property="oldSizeCode" column="old_size_code"/>
+        <result property="newSizeCode" column="new_size_code"/>
+        <result property="applyQuantity" column="apply_quantity"/>
+        <result property="status" column="status"/>
+        <result property="applyTime" column="apply_time"/>
+        <result property="receiveTime" column="receive_time"/>
+        <result property="resendTrackingNo" column="resend_tracking_no"/>
+        <result property="conclusion" column="conclusion"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectRmaOrderVo">
+        select
+            r.rma_id,
+            r.rma_no,
+            r.trace_id,
+            t.trace_code,
+            r.work_order_id,
+            w.work_order_no,
+            s.style_name,
+            r.school_name,
+            r.class_name,
+            r.student_name,
+            r.request_type,
+            r.reason_type,
+            r.old_size_code,
+            r.new_size_code,
+            r.apply_quantity,
+            r.status,
+            r.apply_time,
+            r.receive_time,
+            r.resend_tracking_no,
+            r.conclusion,
+            r.create_by,
+            r.create_time,
+            r.update_by,
+            r.update_time,
+            r.remark
+        from xf_rma_order r
+        left join xf_trace_code t on r.trace_id = t.trace_id
+        left join xf_work_order w on r.work_order_id = w.work_order_id
+        left join xf_uniform_style s on w.style_id = s.style_id
+    </sql>
+
+    <select id="selectRmaOrderById" parameterType="Long" resultMap="UniformRmaOrderResult">
+        <include refid="selectRmaOrderVo"/>
+        where r.rma_id = #{rmaId}
+    </select>
+
+    <select id="selectRmaOrderList" parameterType="com.xiaofu.system.domain.uniform.UniformRmaOrder" resultMap="UniformRmaOrderResult">
+        <include refid="selectRmaOrderVo"/>
+        <where>
+            <if test="rmaNo != null and rmaNo != ''">
+                and r.rma_no like concat('%', #{rmaNo}, '%')
+            </if>
+            <if test="traceCode != null and traceCode != ''">
+                and t.trace_code like concat('%', #{traceCode}, '%')
+            </if>
+            <if test="studentName != null and studentName != ''">
+                and r.student_name like concat('%', #{studentName}, '%')
+            </if>
+            <if test="requestType != null and requestType != ''">
+                and r.request_type = #{requestType}
+            </if>
+            <if test="status != null and status != ''">
+                and r.status = #{status}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(r.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(r.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by r.apply_time desc, r.rma_id desc
+    </select>
+
+    <insert id="insertRmaOrder" parameterType="com.xiaofu.system.domain.uniform.UniformRmaOrder" useGeneratedKeys="true" keyProperty="rmaId">
+        insert into xf_rma_order(
+            rma_no,
+            trace_id,
+            work_order_id,
+            school_name,
+            class_name,
+            student_name,
+            request_type,
+            reason_type,
+            old_size_code,
+            new_size_code,
+            apply_quantity,
+            status,
+            apply_time,
+            receive_time,
+            resend_tracking_no,
+            conclusion,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{rmaNo},
+            #{traceId},
+            #{workOrderId},
+            #{schoolName},
+            #{className},
+            #{studentName},
+            #{requestType},
+            #{reasonType},
+            #{oldSizeCode},
+            #{newSizeCode},
+            #{applyQuantity},
+            #{status},
+            #{applyTime},
+            #{receiveTime},
+            #{resendTrackingNo},
+            #{conclusion},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateRmaOrder" parameterType="com.xiaofu.system.domain.uniform.UniformRmaOrder">
+        update xf_rma_order
+        <set>
+            rma_no = #{rmaNo},
+            trace_id = #{traceId},
+            work_order_id = #{workOrderId},
+            school_name = #{schoolName},
+            class_name = #{className},
+            student_name = #{studentName},
+            request_type = #{requestType},
+            reason_type = #{reasonType},
+            old_size_code = #{oldSizeCode},
+            new_size_code = #{newSizeCode},
+            apply_quantity = #{applyQuantity},
+            status = #{status},
+            apply_time = #{applyTime},
+            receive_time = #{receiveTime},
+            resend_tracking_no = #{resendTrackingNo},
+            conclusion = #{conclusion},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where rma_id = #{rmaId}
+    </update>
+
+    <delete id="deleteRmaOrderByIds" parameterType="Long">
+        delete from xf_rma_order where rma_id in
+        <foreach collection="array" item="rmaId" open="(" separator="," close=")">
+            #{rmaId}
+        </foreach>
+    </delete>
+
+</mapper>

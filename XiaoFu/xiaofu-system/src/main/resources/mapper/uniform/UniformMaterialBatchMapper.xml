@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformMaterialBatchMapper">
+
+    <resultMap id="UniformMaterialBatchResult" type="com.xiaofu.system.domain.uniform.UniformMaterialBatch">
+        <id property="batchId" column="batch_id"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="styleId" column="style_id"/>
+        <result property="styleName" column="style_name"/>
+        <result property="materialType" column="material_type"/>
+        <result property="materialName" column="material_name"/>
+        <result property="vatNo" column="vat_no"/>
+        <result property="gramWeight" column="gram_weight"/>
+        <result property="fabricComposition" column="fabric_composition"/>
+        <result property="colorName" column="color_name"/>
+        <result property="widthValue" column="width_value"/>
+        <result property="inboundQuantity" column="inbound_quantity"/>
+        <result property="quantityUnit" column="quantity_unit"/>
+        <result property="reportNo" column="report_no"/>
+        <result property="reportFileUrl" column="report_file_url"/>
+        <result property="inspectDate" column="inspect_date"/>
+        <result property="status" column="status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectMaterialBatchVo">
+        select
+            b.batch_id,
+            b.batch_no,
+            b.supplier_id,
+            s.supplier_name,
+            b.style_id,
+            us.style_name,
+            b.material_type,
+            b.material_name,
+            b.vat_no,
+            b.gram_weight,
+            b.fabric_composition,
+            b.color_name,
+            b.width_value,
+            b.inbound_quantity,
+            b.quantity_unit,
+            b.report_no,
+            b.report_file_url,
+            b.inspect_date,
+            b.status,
+            b.create_by,
+            b.create_time,
+            b.update_by,
+            b.update_time,
+            b.remark
+        from xf_material_batch b
+        left join xf_supplier s on b.supplier_id = s.supplier_id
+        left join xf_uniform_style us on b.style_id = us.style_id
+    </sql>
+
+    <select id="selectMaterialBatchById" parameterType="Long" resultMap="UniformMaterialBatchResult">
+        <include refid="selectMaterialBatchVo"/>
+        where b.batch_id = #{batchId}
+    </select>
+
+    <select id="selectMaterialBatchList" parameterType="com.xiaofu.system.domain.uniform.UniformMaterialBatch" resultMap="UniformMaterialBatchResult">
+        <include refid="selectMaterialBatchVo"/>
+        <where>
+            <if test="batchNo != null and batchNo != ''">
+                and b.batch_no like concat('%', #{batchNo}, '%')
+            </if>
+            <if test="supplierId != null">
+                and b.supplier_id = #{supplierId}
+            </if>
+            <if test="materialType != null and materialType != ''">
+                and b.material_type = #{materialType}
+            </if>
+            <if test="materialName != null and materialName != ''">
+                and b.material_name like concat('%', #{materialName}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and b.status = #{status}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(b.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(b.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by b.create_time desc
+    </select>
+
+    <select id="checkBatchNoUnique" parameterType="String" resultMap="UniformMaterialBatchResult">
+        <include refid="selectMaterialBatchVo"/>
+        where b.batch_no = #{batchNo}
+        limit 1
+    </select>
+
+    <insert id="insertMaterialBatch" parameterType="com.xiaofu.system.domain.uniform.UniformMaterialBatch" useGeneratedKeys="true" keyProperty="batchId">
+        insert into xf_material_batch(
+            batch_no,
+            supplier_id,
+            style_id,
+            material_type,
+            material_name,
+            vat_no,
+            gram_weight,
+            fabric_composition,
+            color_name,
+            width_value,
+            inbound_quantity,
+            quantity_unit,
+            report_no,
+            report_file_url,
+            inspect_date,
+            status,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{batchNo},
+            #{supplierId},
+            #{styleId},
+            #{materialType},
+            #{materialName},
+            #{vatNo},
+            #{gramWeight},
+            #{fabricComposition},
+            #{colorName},
+            #{widthValue},
+            #{inboundQuantity},
+            #{quantityUnit},
+            #{reportNo},
+            #{reportFileUrl},
+            #{inspectDate},
+            #{status},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateMaterialBatch" parameterType="com.xiaofu.system.domain.uniform.UniformMaterialBatch">
+        update xf_material_batch
+        <set>
+            batch_no = #{batchNo},
+            supplier_id = #{supplierId},
+            style_id = #{styleId},
+            material_type = #{materialType},
+            material_name = #{materialName},
+            vat_no = #{vatNo},
+            gram_weight = #{gramWeight},
+            fabric_composition = #{fabricComposition},
+            color_name = #{colorName},
+            width_value = #{widthValue},
+            inbound_quantity = #{inboundQuantity},
+            quantity_unit = #{quantityUnit},
+            report_no = #{reportNo},
+            report_file_url = #{reportFileUrl},
+            inspect_date = #{inspectDate},
+            status = #{status},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where batch_id = #{batchId}
+    </update>
+
+    <delete id="deleteMaterialBatchByIds" parameterType="Long">
+        delete from xf_material_batch where batch_id in
+        <foreach collection="array" item="batchId" open="(" separator="," close=")">
+            #{batchId}
+        </foreach>
+    </delete>
+
+    <select id="selectAvailableBatchOptions" resultMap="UniformMaterialBatchResult">
+        <include refid="selectMaterialBatchVo"/>
+        where b.status in ('0', '1')
+        order by b.create_time desc
+    </select>
+
+</mapper>

@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformSupplierMapper">
+
+    <resultMap id="UniformSupplierResult" type="com.xiaofu.system.domain.uniform.UniformSupplier">
+        <id property="supplierId" column="supplier_id"/>
+        <result property="supplierCode" column="supplier_code"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="supplierType" column="supplier_type"/>
+        <result property="contactPerson" column="contact_person"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="address" column="address"/>
+        <result property="isoCertNo" column="iso_cert_no"/>
+        <result property="isoExpireDate" column="iso_expire_date"/>
+        <result property="isoCertFileUrl" column="iso_cert_file_url"/>
+        <result property="envCertNo" column="env_cert_no"/>
+        <result property="envExpireDate" column="env_expire_date"/>
+        <result property="envCertFileUrl" column="env_cert_file_url"/>
+        <result property="qualityReportNo" column="quality_report_no"/>
+        <result property="qualityReportExpireDate" column="quality_report_expire_date"/>
+        <result property="qualityReportFileUrl" column="quality_report_file_url"/>
+        <result property="warningDays" column="warning_days"/>
+        <result property="status" column="status"/>
+        <result property="nearestExpireDate" column="nearest_expire_date"/>
+        <result property="alertStatus" column="alert_status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <resultMap id="UniformSupplierAlertSummaryResult" type="com.xiaofu.system.domain.uniform.UniformSupplierAlertSummary">
+        <result property="totalCount" column="total_count"/>
+        <result property="normalCount" column="normal_count"/>
+        <result property="warningCount" column="warning_count"/>
+        <result property="expiredCount" column="expired_count"/>
+    </resultMap>
+
+    <sql id="supplierNearestExpireExpr">
+        nullif(least(
+            ifnull(s.iso_expire_date, str_to_date('2999-12-31', '%Y-%m-%d')),
+            ifnull(s.env_expire_date, str_to_date('2999-12-31', '%Y-%m-%d')),
+            ifnull(s.quality_report_expire_date, str_to_date('2999-12-31', '%Y-%m-%d'))
+        ), str_to_date('2999-12-31', '%Y-%m-%d'))
+    </sql>
+
+    <sql id="supplierAlertStatusExpr">
+        case
+            when (s.iso_expire_date is not null and s.iso_expire_date &lt; curdate())
+                or (s.env_expire_date is not null and s.env_expire_date &lt; curdate())
+                or (s.quality_report_expire_date is not null and s.quality_report_expire_date &lt; curdate())
+                then '2'
+            when (s.iso_expire_date is not null and datediff(s.iso_expire_date, curdate()) between 0 and ifnull(s.warning_days, 30))
+                or (s.env_expire_date is not null and datediff(s.env_expire_date, curdate()) between 0 and ifnull(s.warning_days, 30))
+                or (s.quality_report_expire_date is not null and datediff(s.quality_report_expire_date, curdate()) between 0 and ifnull(s.warning_days, 30))
+                then '1'
+            else '0'
+        end
+    </sql>
+
+    <sql id="selectSupplierVo">
+        select
+            s.supplier_id,
+            s.supplier_code,
+            s.supplier_name,
+            s.supplier_type,
+            s.contact_person,
+            s.contact_phone,
+            s.address,
+            s.iso_cert_no,
+            s.iso_expire_date,
+            s.iso_cert_file_url,
+            s.env_cert_no,
+            s.env_expire_date,
+            s.env_cert_file_url,
+            s.quality_report_no,
+            s.quality_report_expire_date,
+            s.quality_report_file_url,
+            s.warning_days,
+            s.status,
+            <include refid="supplierNearestExpireExpr"/> as nearest_expire_date,
+            <include refid="supplierAlertStatusExpr"/> as alert_status,
+            s.create_by,
+            s.create_time,
+            s.update_by,
+            s.update_time,
+            s.remark
+        from xf_supplier s
+    </sql>
+
+    <select id="selectSupplierById" parameterType="Long" resultMap="UniformSupplierResult">
+        <include refid="selectSupplierVo"/>
+        where s.supplier_id = #{supplierId}
+    </select>
+
+    <select id="selectSupplierList" parameterType="com.xiaofu.system.domain.uniform.UniformSupplier" resultMap="UniformSupplierResult">
+        <include refid="selectSupplierVo"/>
+        <where>
+            <if test="supplierCode != null and supplierCode != ''">
+                and s.supplier_code like concat('%', #{supplierCode}, '%')
+            </if>
+            <if test="supplierName != null and supplierName != ''">
+                and s.supplier_name like concat('%', #{supplierName}, '%')
+            </if>
+            <if test="supplierType != null and supplierType != ''">
+                and s.supplier_type = #{supplierType}
+            </if>
+            <if test="contactPerson != null and contactPerson != ''">
+                and s.contact_person like concat('%', #{contactPerson}, '%')
+            </if>
+            <if test="status != null and status != ''">
+                and s.status = #{status}
+            </if>
+            <if test="alertStatus != null and alertStatus != ''">
+                and <include refid="supplierAlertStatusExpr"/> = #{alertStatus}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(s.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(s.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by alert_status desc, nearest_expire_date asc, s.create_time desc
+    </select>
+
+    <select id="checkSupplierCodeUnique" parameterType="String" resultMap="UniformSupplierResult">
+        <include refid="selectSupplierVo"/>
+        where s.supplier_code = #{supplierCode}
+        limit 1
+    </select>
+
+    <insert id="insertSupplier" parameterType="com.xiaofu.system.domain.uniform.UniformSupplier" useGeneratedKeys="true" keyProperty="supplierId">
+        insert into xf_supplier(
+            supplier_code,
+            supplier_name,
+            supplier_type,
+            contact_person,
+            contact_phone,
+            address,
+            iso_cert_no,
+            iso_expire_date,
+            iso_cert_file_url,
+            env_cert_no,
+            env_expire_date,
+            env_cert_file_url,
+            quality_report_no,
+            quality_report_expire_date,
+            quality_report_file_url,
+            warning_days,
+            status,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{supplierCode},
+            #{supplierName},
+            #{supplierType},
+            #{contactPerson},
+            #{contactPhone},
+            #{address},
+            #{isoCertNo},
+            #{isoExpireDate},
+            #{isoCertFileUrl},
+            #{envCertNo},
+            #{envExpireDate},
+            #{envCertFileUrl},
+            #{qualityReportNo},
+            #{qualityReportExpireDate},
+            #{qualityReportFileUrl},
+            #{warningDays},
+            #{status},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateSupplier" parameterType="com.xiaofu.system.domain.uniform.UniformSupplier">
+        update xf_supplier
+        <set>
+            supplier_code = #{supplierCode},
+            supplier_name = #{supplierName},
+            supplier_type = #{supplierType},
+            contact_person = #{contactPerson},
+            contact_phone = #{contactPhone},
+            address = #{address},
+            iso_cert_no = #{isoCertNo},
+            iso_expire_date = #{isoExpireDate},
+            iso_cert_file_url = #{isoCertFileUrl},
+            env_cert_no = #{envCertNo},
+            env_expire_date = #{envExpireDate},
+            env_cert_file_url = #{envCertFileUrl},
+            quality_report_no = #{qualityReportNo},
+            quality_report_expire_date = #{qualityReportExpireDate},
+            quality_report_file_url = #{qualityReportFileUrl},
+            warning_days = #{warningDays},
+            status = #{status},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where supplier_id = #{supplierId}
+    </update>
+
+    <delete id="deleteSupplierByIds" parameterType="Long">
+        delete from xf_supplier where supplier_id in
+        <foreach collection="array" item="supplierId" open="(" separator="," close=")">
+            #{supplierId}
+        </foreach>
+    </delete>
+
+    <select id="selectSupplierAlertSummary" resultMap="UniformSupplierAlertSummaryResult">
+        select
+            count(1) as total_count,
+            sum(case when <include refid="supplierAlertStatusExpr"/> = '0' then 1 else 0 end) as normal_count,
+            sum(case when <include refid="supplierAlertStatusExpr"/> = '1' then 1 else 0 end) as warning_count,
+            sum(case when <include refid="supplierAlertStatusExpr"/> = '2' then 1 else 0 end) as expired_count
+        from xf_supplier s
+        where s.status = '0'
+    </select>
+
+    <select id="selectAvailableSuppliers" resultMap="UniformSupplierResult">
+        <include refid="selectSupplierVo"/>
+        where s.status = '0'
+        order by s.supplier_name asc
+    </select>
+
+</mapper>

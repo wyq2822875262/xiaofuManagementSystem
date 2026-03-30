@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformScreenMapper">
+
+    <select id="countWorkOrdersBySeason" resultType="int">
+        select count(1)
+        from xf_work_order w
+        left join xf_uniform_style st on w.style_id = st.style_id
+        where st.season = #{seasonCode}
+    </select>
+
+    <select id="selectDominantSeasonCode" resultType="String">
+        select season_code
+        from (
+            select st.season as season_code, count(1) as total_count
+            from xf_work_order w
+            left join xf_uniform_style st on w.style_id = st.style_id
+            where st.season is not null and st.season != ''
+            group by st.season
+            union all
+            select st.season as season_code, 1 as total_count
+            from xf_uniform_style st
+            where st.season is not null and st.season != ''
+        ) season_stat
+        group by season_code
+        order by sum(total_count) desc, season_code asc
+        limit 1
+    </select>
+
+    <select id="selectMetricAggregate" resultType="com.xiaofu.system.domain.uniform.UniformScreenMetricAggregate">
+        select
+            (
+                select count(distinct concat_ws('|', m.school_name, m.class_name,
+                    case when ifnull(m.student_no, '') = '' then m.student_name else m.student_no end))
+                from xf_measure_record m
+            ) as protectedStudents,
+            (
+                select ifnull(sum(s.total_quantity), 0)
+                from xf_shipment_order s
+                left join xf_work_order w on s.work_order_id = w.work_order_id
+                left join xf_uniform_style st on w.style_id = st.style_id
+                where st.season = #{seasonCode}
+            ) as seasonalDeliveryQuantity,
+            (
+                select count(distinct w.school_name)
+                from xf_work_order w
+                left join xf_uniform_style st on w.style_id = st.style_id
+                where st.season = #{seasonCode}
+            ) as activeSchools,
+            (
+                select ifnull(sum(case when q.result = '0' then 1 else 0 end), 0)
+                from xf_quality_inspection q
+                left join xf_work_order w on q.work_order_id = w.work_order_id
+                left join xf_uniform_style st on w.style_id = st.style_id
+                where st.season = #{seasonCode}
+            ) as qualityPassCount,
+            (
+                select count(1)
+                from xf_quality_inspection q
+                left join xf_work_order w on q.work_order_id = w.work_order_id
+                left join xf_uniform_style st on w.style_id = st.style_id
+                where st.season = #{seasonCode}
+            ) as qualityInspectCount
+    </select>
+
+    <select id="selectLatestInspectionSnapshot" resultType="com.xiaofu.system.domain.uniform.UniformScreenInspectionSnapshot">
+        select
+            q.inspection_id as inspectionId,
+            q.inspection_no as inspectionNo,
+            w.school_name as schoolName,
+            st.style_name as styleName,
+            mb.batch_no as batchNo,
+            q.gb_standard as gbStandard,
+            q.result as result,
+            q.conclusion as conclusion,
+            q.inspect_time as inspectTime,
+            q.formaldehyde as formaldehyde,
+            q.ph_value as phValue,
+            q.odor_result as odorResult,
+            q.amine_result as amineResult,
+            q.color_fastness as colorFastness,
+            q.pilling_grade as pillingGrade
+        from xf_quality_inspection q
+        left join xf_work_order w on q.work_order_id = w.work_order_id
+        left join xf_uniform_style st on w.style_id = st.style_id
+        left join xf_material_batch mb on w.material_batch_id = mb.batch_id
+        where st.season = #{seasonCode}
+        order by q.inspect_time desc, q.inspection_id desc
+        limit 1
+    </select>
+
+    <select id="selectProductionStageStats" resultType="com.xiaofu.system.domain.uniform.UniformScreenStageStat">
+        select
+            w.order_status as stageCode,
+            count(1) as value
+        from xf_work_order w
+        left join xf_uniform_style st on w.style_id = st.style_id
+        where st.season = #{seasonCode}
+        group by w.order_status
+        order by w.order_status asc
+    </select>
+
+    <sql id="shipmentAggregateBySchool">
+        select
+            s.school_name,
+            ifnull(sum(s.total_quantity), 0) as total_quantity,
+            ifnull(sum(s.packed_quantity), 0) as packed_quantity,
+            ifnull(sum(case when s.shipment_status = '4' then s.total_quantity else 0 end), 0) as signed_quantity,
+            cast(max(cast(ifnull(s.shipment_status, '0') as unsigned)) as char) as shipment_status
+        from xf_shipment_order s
+        left join xf_work_order w on s.work_order_id = w.work_order_id
+        left join xf_uniform_style st on w.style_id = st.style_id
+        where st.season = #{seasonCode}
+        group by s.school_name
+    </sql>
+
+    <select id="selectLogisticsFlows" resultType="com.xiaofu.system.domain.uniform.UniformScreenFlowLine">
+        select
+            concat(r.source_name, ' -> ', r.target_name) as routeName,
+            r.source_name as sourceName,
+            r.source_lng as sourceLng,
+            r.source_lat as sourceLat,
+            r.target_name as targetName,
+            r.target_lng as targetLng,
+            r.target_lat as targetLat,
+            ifnull(agg.total_quantity, 0) as shipmentQuantity,
+            ifnull(agg.packed_quantity, 0) as packedQuantity,
+            round(
+                case when ifnull(agg.total_quantity, 0) = 0 then 0
+                else agg.packed_quantity * 100 / agg.total_quantity end,
+                1
+            ) as progressRate
+        from xf_screen_route_config r
+        left join (
+            <include refid="shipmentAggregateBySchool"/>
+        ) agg on agg.school_name = r.target_name
+        where r.route_status = '0'
+        order by shipmentQuantity desc, r.route_id asc
+    </select>
+
+    <select id="selectDeliveryProgress" resultType="com.xiaofu.system.domain.uniform.UniformScreenProgressItem">
+        select
+            r.target_name as schoolName,
+            ifnull(agg.total_quantity, 0) as totalQuantity,
+            ifnull(agg.packed_quantity, 0) as packedQuantity,
+            ifnull(agg.signed_quantity, 0) as signedQuantity,
+            round(
+                case when ifnull(agg.total_quantity, 0) = 0 then 0
+                else agg.packed_quantity * 100 / agg.total_quantity end,
+                1
+            ) as progressRate,
+            round(
+                case when ifnull(agg.total_quantity, 0) = 0 then 0
+                else agg.signed_quantity * 100 / agg.total_quantity end,
+                1
+            ) as signRate,
+            agg.shipment_status as shipmentStatus
+        from xf_screen_route_config r
+        left join (
+            <include refid="shipmentAggregateBySchool"/>
+        ) agg on agg.school_name = r.target_name
+        where r.route_status = '0'
+        order by progressRate desc, totalQuantity desc, schoolName asc
+    </select>
+
+    <select id="selectFeedbackCloud" resultType="com.xiaofu.system.domain.uniform.UniformScreenWordCloudItem">
+        select
+            f.keyword_tag as name,
+            count(1) as value
+        from xf_parent_feedback f
+        where f.sentiment = '1'
+          and ifnull(f.keyword_tag, '') != ''
+        group by f.keyword_tag
+        order by value desc, avg(f.score) desc, f.keyword_tag asc
+        limit 12
+    </select>
+
+    <select id="selectBodyTypeDistribution" resultType="com.xiaofu.system.domain.uniform.UniformScreenPieItem">
+        select
+            body_type as name,
+            count(1) as value
+        from (
+            select
+                case
+                    when m.height_value is null or m.height_value = 0 or m.weight_value is null then '待完善'
+                    when m.weight_value / ((m.height_value / 100) * (m.height_value / 100)) &lt; 18.5 then '偏瘦'
+                    when m.weight_value / ((m.height_value / 100) * (m.height_value / 100)) &lt; 24 then '标准'
+                    when m.weight_value / ((m.height_value / 100) * (m.height_value / 100)) &lt; 27 then '微胖'
+                    else '壮实'
+                end as body_type
+            from xf_measure_record m
+            left join xf_uniform_style st on m.style_id = st.style_id
+            where st.season = #{seasonCode}
+        ) body_stat
+        group by body_type
+        order by value desc, name asc
+    </select>
+
+</mapper>

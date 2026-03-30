@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformLostFoundBindingMapper">
+
+    <resultMap id="UniformLostFoundBindingResult" type="com.xiaofu.system.domain.uniform.UniformLostFoundBinding">
+        <id property="bindingId" column="binding_id"/>
+        <result property="traceId" column="trace_id"/>
+        <result property="traceCode" column="trace_code"/>
+        <result property="schoolName" column="school_name"/>
+        <result property="className" column="class_name"/>
+        <result property="studentName" column="student_name"/>
+        <result property="contactName" column="contact_name"/>
+        <result property="contactPhone" column="contact_phone"/>
+        <result property="ownerRemark" column="owner_remark"/>
+        <result property="bindStatus" column="bind_status"/>
+        <result property="bindTime" column="bind_time"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectLostFoundBindingVo">
+        select
+            binding_id,
+            trace_id,
+            trace_code,
+            school_name,
+            class_name,
+            student_name,
+            contact_name,
+            contact_phone,
+            owner_remark,
+            bind_status,
+            bind_time,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            remark
+        from xf_lost_found_binding
+    </sql>
+
+    <select id="selectActiveBindingByTraceId" parameterType="Long" resultMap="UniformLostFoundBindingResult">
+        <include refid="selectLostFoundBindingVo"/>
+        where trace_id = #{traceId}
+          and bind_status = '0'
+        limit 1
+    </select>
+
+    <select id="selectActiveBindingByTraceCode" parameterType="String" resultMap="UniformLostFoundBindingResult">
+        <include refid="selectLostFoundBindingVo"/>
+        where trace_code = #{traceCode}
+          and bind_status = '0'
+        limit 1
+    </select>
+
+    <insert id="insertLostFoundBinding" parameterType="com.xiaofu.system.domain.uniform.UniformLostFoundBinding" useGeneratedKeys="true" keyProperty="bindingId">
+        insert into xf_lost_found_binding(
+            trace_id,
+            trace_code,
+            school_name,
+            class_name,
+            student_name,
+            contact_name,
+            contact_phone,
+            owner_remark,
+            bind_status,
+            bind_time,
+            create_by,
+            create_time,
+            remark
+        ) values (
+            #{traceId},
+            #{traceCode},
+            #{schoolName},
+            #{className},
+            #{studentName},
+            #{contactName},
+            #{contactPhone},
+            #{ownerRemark},
+            #{bindStatus},
+            #{bindTime},
+            #{createBy},
+            sysdate(),
+            #{remark}
+        )
+    </insert>
+
+    <update id="updateLostFoundBinding" parameterType="com.xiaofu.system.domain.uniform.UniformLostFoundBinding">
+        update xf_lost_found_binding
+        <set>
+            trace_id = #{traceId},
+            trace_code = #{traceCode},
+            school_name = #{schoolName},
+            class_name = #{className},
+            student_name = #{studentName},
+            contact_name = #{contactName},
+            contact_phone = #{contactPhone},
+            owner_remark = #{ownerRemark},
+            bind_status = #{bindStatus},
+            bind_time = #{bindTime},
+            update_by = #{updateBy},
+            update_time = sysdate(),
+            remark = #{remark}
+        </set>
+        where binding_id = #{bindingId}
+    </update>
+
+</mapper>

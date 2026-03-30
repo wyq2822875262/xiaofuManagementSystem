@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformQualityInspectionMapper">
+
+    <resultMap id="UniformQualityInspectionResult" type="com.xiaofu.system.domain.uniform.UniformQualityInspection">
+        <id property="inspectionId" column="inspection_id"/>
+        <result property="inspectionNo" column="inspection_no"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="styleName" column="style_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="gbStandard" column="gb_standard"/>
+        <result property="sampleQuantity" column="sample_quantity"/>
+        <result property="formaldehyde" column="formaldehyde"/>
+        <result property="phValue" column="ph_value"/>
+        <result property="odorResult" column="odor_result"/>
+        <result property="amineResult" column="amine_result"/>
+        <result property="colorFastness" column="color_fastness"/>
+        <result property="pillingGrade" column="pilling_grade"/>
+        <result property="result" column="result"/>
+        <result property="interceptStatus" column="intercept_status"/>
+        <result property="failReason" column="fail_reason"/>
+        <result property="inspectorName" column="inspector_name"/>
+        <result property="inspectTime" column="inspect_time"/>
+        <result property="reportFileUrl" column="report_file_url"/>
+        <result property="conclusion" column="conclusion"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectInspectionVo">
+        select
+            q.inspection_id,
+            q.inspection_no,
+            q.work_order_id,
+            w.work_order_no,
+            s.style_name,
+            b.batch_no,
+            q.gb_standard,
+            q.sample_quantity,
+            q.formaldehyde,
+            q.ph_value,
+            q.odor_result,
+            q.amine_result,
+            q.color_fastness,
+            q.pilling_grade,
+            q.result,
+            q.intercept_status,
+            q.fail_reason,
+            q.inspector_name,
+            q.inspect_time,
+            q.report_file_url,
+            q.conclusion,
+            q.create_by,
+            q.create_time,
+            q.update_by,
+            q.update_time,
+            q.remark
+        from xf_quality_inspection q
+        left join xf_work_order w on q.work_order_id = w.work_order_id
+        left join xf_uniform_style s on w.style_id = s.style_id
+        left join xf_material_batch b on w.material_batch_id = b.batch_id
+    </sql>
+
+    <select id="selectInspectionById" parameterType="Long" resultMap="UniformQualityInspectionResult">
+        <include refid="selectInspectionVo"/>
+        where q.inspection_id = #{inspectionId}
+    </select>
+
+    <select id="selectInspectionList" parameterType="com.xiaofu.system.domain.uniform.UniformQualityInspection" resultMap="UniformQualityInspectionResult">
+        <include refid="selectInspectionVo"/>
+        <where>
+            <if test="inspectionNo != null and inspectionNo != ''">
+                and q.inspection_no like concat('%', #{inspectionNo}, '%')
+            </if>
+            <if test="workOrderId != null">
+                and q.work_order_id = #{workOrderId}
+            </if>
+            <if test="workOrderNo != null and workOrderNo != ''">
+                and w.work_order_no like concat('%', #{workOrderNo}, '%')
+            </if>
+            <if test="result != null and result != ''">
+                and q.result = #{result}
+            </if>
+            <if test="interceptStatus != null and interceptStatus != ''">
+                and q.intercept_status = #{interceptStatus}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(q.inspect_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(q.inspect_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by q.inspect_time desc, q.inspection_id desc
+    </select>
+
+    <select id="selectLatestInspectionByWorkOrderId" parameterType="Long" resultMap="UniformQualityInspectionResult">
+        <include refid="selectInspectionVo"/>
+        where q.work_order_id = #{workOrderId}
+        order by q.inspect_time desc, q.inspection_id desc
+        limit 1
+    </select>
+
+    <insert id="insertInspection" parameterType="com.xiaofu.system.domain.uniform.UniformQualityInspection" useGeneratedKeys="true" keyProperty="inspectionId">
+        insert into xf_quality_inspection(
+            inspection_no,
+            work_order_id,
+            gb_standard,
+            sample_quantity,
+            formaldehyde,
+            ph_value,
+            odor_result,
+            amine_result,
+            color_fastness,
+            pilling_grade,
+            result,
+            intercept_status,
+            fail_reason,
+            inspector_name,
+            inspect_time,
+            report_file_url,
+            conclusion,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{inspectionNo},
+            #{workOrderId},
+            #{gbStandard},
+            #{sampleQuantity},
+            #{formaldehyde},
+            #{phValue},
+            #{odorResult},
+            #{amineResult},
+            #{colorFastness},
+            #{pillingGrade},
+            #{result},
+            #{interceptStatus},
+            #{failReason},
+            #{inspectorName},
+            #{inspectTime},
+            #{reportFileUrl},
+            #{conclusion},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateInspection" parameterType="com.xiaofu.system.domain.uniform.UniformQualityInspection">
+        update xf_quality_inspection
+        <set>
+            inspection_no = #{inspectionNo},
+            work_order_id = #{workOrderId},
+            gb_standard = #{gbStandard},
+            sample_quantity = #{sampleQuantity},
+            formaldehyde = #{formaldehyde},
+            ph_value = #{phValue},
+            odor_result = #{odorResult},
+            amine_result = #{amineResult},
+            color_fastness = #{colorFastness},
+            pilling_grade = #{pillingGrade},
+            result = #{result},
+            intercept_status = #{interceptStatus},
+            fail_reason = #{failReason},
+            inspector_name = #{inspectorName},
+            inspect_time = #{inspectTime},
+            report_file_url = #{reportFileUrl},
+            conclusion = #{conclusion},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where inspection_id = #{inspectionId}
+    </update>
+
+    <delete id="deleteInspectionByIds" parameterType="Long">
+        delete from xf_quality_inspection where inspection_id in
+        <foreach collection="array" item="inspectionId" open="(" separator="," close=")">
+            #{inspectionId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteInspectionByWorkOrderIds" parameterType="Long">
+        delete from xf_quality_inspection where work_order_id in
+        <foreach collection="array" item="workOrderId" open="(" separator="," close=")">
+            #{workOrderId}
+        </foreach>
+    </delete>
+
+</mapper>

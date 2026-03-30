@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformMeasureRecordMapper">
+
+    <resultMap id="UniformMeasureRecordResult" type="com.xiaofu.system.domain.uniform.UniformMeasureRecord">
+        <id property="measureId" column="measure_id"/>
+        <result property="styleId" column="style_id"/>
+        <result property="styleName" column="style_name"/>
+        <result property="schoolName" column="school_name"/>
+        <result property="campusName" column="campus_name"/>
+        <result property="gradeName" column="grade_name"/>
+        <result property="className" column="class_name"/>
+        <result property="studentName" column="student_name"/>
+        <result property="studentNo" column="student_no"/>
+        <result property="gender" column="gender"/>
+        <result property="heightValue" column="height_value"/>
+        <result property="weightValue" column="weight_value"/>
+        <result property="sourceChannel" column="source_channel"/>
+        <result property="measureTime" column="measure_time"/>
+        <result property="recommendedSizeCode" column="recommended_size_code"/>
+        <result property="recommendedSizeName" column="recommended_size_name"/>
+        <result property="finalSizeCode" column="final_size_code"/>
+        <result property="finalSizeName" column="final_size_name"/>
+        <result property="measureStatus" column="measure_status"/>
+        <result property="bodyRemark" column="body_remark"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectMeasureRecordVo">
+        select
+            m.measure_id,
+            m.style_id,
+            s.style_name,
+            m.school_name,
+            m.campus_name,
+            m.grade_name,
+            m.class_name,
+            m.student_name,
+            m.student_no,
+            m.gender,
+            m.height_value,
+            m.weight_value,
+            m.source_channel,
+            m.measure_time,
+            m.recommended_size_code,
+            m.recommended_size_name,
+            m.final_size_code,
+            m.final_size_name,
+            m.measure_status,
+            m.body_remark,
+            m.create_by,
+            m.create_time,
+            m.update_by,
+            m.update_time,
+            m.remark
+        from xf_measure_record m
+        left join xf_uniform_style s on m.style_id = s.style_id
+    </sql>
+
+    <select id="selectMeasureRecordById" parameterType="Long" resultMap="UniformMeasureRecordResult">
+        <include refid="selectMeasureRecordVo"/>
+        where m.measure_id = #{measureId}
+    </select>
+
+    <select id="selectMeasureRecordList" parameterType="com.xiaofu.system.domain.uniform.UniformMeasureRecord" resultMap="UniformMeasureRecordResult">
+        <include refid="selectMeasureRecordVo"/>
+        <where>
+            <if test="styleId != null">
+                and m.style_id = #{styleId}
+            </if>
+            <if test="schoolName != null and schoolName != ''">
+                and m.school_name like concat('%', #{schoolName}, '%')
+            </if>
+            <if test="className != null and className != ''">
+                and m.class_name like concat('%', #{className}, '%')
+            </if>
+            <if test="studentName != null and studentName != ''">
+                and m.student_name like concat('%', #{studentName}, '%')
+            </if>
+            <if test="measureStatus != null and measureStatus != ''">
+                and m.measure_status = #{measureStatus}
+            </if>
+            <if test="finalSizeCode != null and finalSizeCode != ''">
+                and m.final_size_code = #{finalSizeCode}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(m.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(m.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by m.measure_time desc, m.measure_id desc
+    </select>
+
+    <insert id="insertMeasureRecord" parameterType="com.xiaofu.system.domain.uniform.UniformMeasureRecord" useGeneratedKeys="true" keyProperty="measureId">
+        insert into xf_measure_record(
+            style_id,
+            school_name,
+            campus_name,
+            grade_name,
+            class_name,
+            student_name,
+            student_no,
+            gender,
+            height_value,
+            weight_value,
+            source_channel,
+            measure_time,
+            recommended_size_code,
+            recommended_size_name,
+            final_size_code,
+            final_size_name,
+            measure_status,
+            body_remark,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{styleId},
+            #{schoolName},
+            #{campusName},
+            #{gradeName},
+            #{className},
+            #{studentName},
+            #{studentNo},
+            #{gender},
+            #{heightValue},
+            #{weightValue},
+            #{sourceChannel},
+            #{measureTime},
+            #{recommendedSizeCode},
+            #{recommendedSizeName},
+            #{finalSizeCode},
+            #{finalSizeName},
+            #{measureStatus},
+            #{bodyRemark},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateMeasureRecord" parameterType="com.xiaofu.system.domain.uniform.UniformMeasureRecord">
+        update xf_measure_record
+        <set>
+            style_id = #{styleId},
+            school_name = #{schoolName},
+            campus_name = #{campusName},
+            grade_name = #{gradeName},
+            class_name = #{className},
+            student_name = #{studentName},
+            student_no = #{studentNo},
+            gender = #{gender},
+            height_value = #{heightValue},
+            weight_value = #{weightValue},
+            source_channel = #{sourceChannel},
+            measure_time = #{measureTime},
+            recommended_size_code = #{recommendedSizeCode},
+            recommended_size_name = #{recommendedSizeName},
+            final_size_code = #{finalSizeCode},
+            final_size_name = #{finalSizeName},
+            measure_status = #{measureStatus},
+            body_remark = #{bodyRemark},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where measure_id = #{measureId}
+    </update>
+
+    <delete id="deleteMeasureRecordByIds" parameterType="Long">
+        delete from xf_measure_record where measure_id in
+        <foreach collection="array" item="measureId" open="(" separator="," close=")">
+            #{measureId}
+        </foreach>
+    </delete>
+
+</mapper>

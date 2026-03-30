@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformStyleMapper">
+
+    <resultMap id="UniformStyleResult" type="com.xiaofu.system.domain.uniform.UniformStyle">
+        <id property="styleId" column="style_id"/>
+        <result property="styleCode" column="style_code"/>
+        <result property="styleName" column="style_name"/>
+        <result property="season" column="season"/>
+        <result property="styleType" column="style_type"/>
+        <result property="gender" column="gender"/>
+        <result property="fabricName" column="fabric_name"/>
+        <result property="fabricComposition" column="fabric_composition"/>
+        <result property="codeMode" column="code_mode"/>
+        <result property="specialBodySupport" column="special_body_support"/>
+        <result property="careInstructions" column="care_instructions"/>
+        <result property="status" column="status"/>
+        <result property="sizeCount" column="size_count"/>
+        <result property="bomCount" column="bom_count"/>
+        <result property="sizeSummary" column="size_summary"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectStyleVo">
+        select
+            s.style_id,
+            s.style_code,
+            s.style_name,
+            s.season,
+            s.style_type,
+            s.gender,
+            s.fabric_name,
+            s.fabric_composition,
+            s.code_mode,
+            s.special_body_support,
+            s.care_instructions,
+            s.status,
+            ifnull(sz.size_count, 0) as size_count,
+            sz.size_summary,
+            ifnull(bm.bom_count, 0) as bom_count,
+            s.create_by,
+            s.create_time,
+            s.update_by,
+            s.update_time,
+            s.remark
+        from xf_uniform_style s
+        left join (
+            select
+                style_id,
+                count(1) as size_count,
+                group_concat(
+                    concat(
+                        coalesce(nullif(size_name, ''), size_code),
+                        case special_type
+                            when '1' then '(加肥)'
+                            when '2' then '(加长)'
+                            when '3' then '(加肥加长)'
+                            else ''
+                        end
+                    )
+                    order by sort_order asc, size_id asc separator '、'
+                ) as size_summary
+            from xf_uniform_style_size
+            group by style_id
+        ) sz on s.style_id = sz.style_id
+        left join (
+            select style_id, count(1) as bom_count
+            from xf_uniform_style_bom
+            group by style_id
+        ) bm on s.style_id = bm.style_id
+    </sql>
+
+    <select id="selectStyleById" parameterType="Long" resultMap="UniformStyleResult">
+        <include refid="selectStyleVo"/>
+        where s.style_id = #{styleId}
+    </select>
+
+    <select id="selectStyleList" parameterType="com.xiaofu.system.domain.uniform.UniformStyle" resultMap="UniformStyleResult">
+        <include refid="selectStyleVo"/>
+        <where>
+            <if test="styleCode != null and styleCode != ''">
+                and s.style_code like concat('%', #{styleCode}, '%')
+            </if>
+            <if test="styleName != null and styleName != ''">
+                and s.style_name like concat('%', #{styleName}, '%')
+            </if>
+            <if test="season != null and season != ''">
+                and s.season = #{season}
+            </if>
+            <if test="styleType != null and styleType != ''">
+                and s.style_type = #{styleType}
+            </if>
+            <if test="gender != null and gender != ''">
+                and s.gender = #{gender}
+            </if>
+            <if test="status != null and status != ''">
+                and s.status = #{status}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(s.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(s.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by s.create_time desc
+    </select>
+
+    <select id="checkStyleCodeUnique" parameterType="String" resultMap="UniformStyleResult">
+        <include refid="selectStyleVo"/>
+        where s.style_code = #{styleCode}
+        limit 1
+    </select>
+
+    <insert id="insertStyle" parameterType="com.xiaofu.system.domain.uniform.UniformStyle" useGeneratedKeys="true" keyProperty="styleId">
+        insert into xf_uniform_style(
+            style_code,
+            style_name,
+            season,
+            style_type,
+            gender,
+            fabric_name,
+            fabric_composition,
+            code_mode,
+            special_body_support,
+            care_instructions,
+            status,
+            remark,
+            create_by,
+            create_time
+        ) values (
+            #{styleCode},
+            #{styleName},
+            #{season},
+            #{styleType},
+            #{gender},
+            #{fabricName},
+            #{fabricComposition},
+            #{codeMode},
+            #{specialBodySupport},
+            #{careInstructions},
+            #{status},
+            #{remark},
+            #{createBy},
+            sysdate()
+        )
+    </insert>
+
+    <update id="updateStyle" parameterType="com.xiaofu.system.domain.uniform.UniformStyle">
+        update xf_uniform_style
+        <set>
+            style_code = #{styleCode},
+            style_name = #{styleName},
+            season = #{season},
+            style_type = #{styleType},
+            gender = #{gender},
+            fabric_name = #{fabricName},
+            fabric_composition = #{fabricComposition},
+            code_mode = #{codeMode},
+            special_body_support = #{specialBodySupport},
+            care_instructions = #{careInstructions},
+            status = #{status},
+            remark = #{remark},
+            update_by = #{updateBy},
+            update_time = sysdate()
+        </set>
+        where style_id = #{styleId}
+    </update>
+
+    <delete id="deleteStyleByIds" parameterType="Long">
+        delete from xf_uniform_style where style_id in
+        <foreach collection="array" item="styleId" open="(" separator="," close=")">
+            #{styleId}
+        </foreach>
+    </delete>
+
+</mapper>

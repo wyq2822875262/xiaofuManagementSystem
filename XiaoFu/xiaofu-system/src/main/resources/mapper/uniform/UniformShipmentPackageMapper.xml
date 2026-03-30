@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformShipmentPackageMapper">
+
+    <resultMap id="UniformShipmentPackageResult" type="com.xiaofu.system.domain.uniform.UniformShipmentPackage">
+        <id property="packageId" column="package_id"/>
+        <result property="shipmentId" column="shipment_id"/>
+        <result property="packageNo" column="package_no"/>
+        <result property="gender" column="gender"/>
+        <result property="sizeCode" column="size_code"/>
+        <result property="quantity" column="quantity"/>
+        <result property="scanStatus" column="scan_status"/>
+        <result property="boxLabel" column="box_label"/>
+        <result property="traceCodeStart" column="trace_code_start"/>
+        <result property="traceCodeEnd" column="trace_code_end"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectShipmentPackageListByShipmentId" parameterType="Long" resultMap="UniformShipmentPackageResult">
+        select
+            package_id,
+            shipment_id,
+            package_no,
+            gender,
+            size_code,
+            quantity,
+            scan_status,
+            box_label,
+            trace_code_start,
+            trace_code_end,
+            remark
+        from xf_shipment_package
+        where shipment_id = #{shipmentId}
+        order by package_id asc
+    </select>
+
+    <delete id="deleteShipmentPackageByShipmentId" parameterType="Long">
+        delete from xf_shipment_package where shipment_id = #{shipmentId}
+    </delete>
+
+    <delete id="deleteShipmentPackageByShipmentIds" parameterType="Long">
+        delete from xf_shipment_package where shipment_id in
+        <foreach collection="array" item="shipmentId" open="(" separator="," close=")">
+            #{shipmentId}
+        </foreach>
+    </delete>
+
+    <insert id="batchInsertShipmentPackage">
+        insert into xf_shipment_package(
+            shipment_id,
+            package_no,
+            gender,
+            size_code,
+            quantity,
+            scan_status,
+            box_label,
+            trace_code_start,
+            trace_code_end,
+            remark,
+            create_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.shipmentId},
+                #{item.packageNo},
+                #{item.gender},
+                #{item.sizeCode},
+                #{item.quantity},
+                #{item.scanStatus},
+                #{item.boxLabel},
+                #{item.traceCodeStart},
+                #{item.traceCodeEnd},
+                #{item.remark},
+                sysdate()
+            )
+        </foreach>
+    </insert>
+
+</mapper>

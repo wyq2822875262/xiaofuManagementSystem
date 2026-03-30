@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformStyleBomMapper">
+
+    <resultMap id="UniformStyleBomResult" type="com.xiaofu.system.domain.uniform.UniformStyleBom">
+        <id property="bomId" column="bom_id"/>
+        <result property="styleId" column="style_id"/>
+        <result property="materialType" column="material_type"/>
+        <result property="materialName" column="material_name"/>
+        <result property="materialSpec" column="material_spec"/>
+        <result property="materialComposition" column="material_composition"/>
+        <result property="dosage" column="dosage"/>
+        <result property="dosageUnit" column="dosage_unit"/>
+        <result property="supplierId" column="supplier_id"/>
+        <result property="supplierName" column="supplier_name"/>
+        <result property="traceRequired" column="trace_required"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectStyleBomListByStyleId" parameterType="Long" resultMap="UniformStyleBomResult">
+        select
+            b.bom_id,
+            b.style_id,
+            b.material_type,
+            b.material_name,
+            b.material_spec,
+            b.material_composition,
+            b.dosage,
+            b.dosage_unit,
+            b.supplier_id,
+            s.supplier_name,
+            b.trace_required,
+            b.sort_order,
+            b.remark
+        from xf_uniform_style_bom b
+        left join xf_supplier s on b.supplier_id = s.supplier_id
+        where b.style_id = #{styleId}
+        order by b.sort_order asc, b.bom_id asc
+    </select>
+
+    <delete id="deleteStyleBomByStyleIds" parameterType="Long">
+        delete from xf_uniform_style_bom where style_id in
+        <foreach collection="array" item="styleId" open="(" separator="," close=")">
+            #{styleId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteStyleBomByStyleId" parameterType="Long">
+        delete from xf_uniform_style_bom where style_id = #{styleId}
+    </delete>
+
+    <insert id="batchInsertStyleBom">
+        insert into xf_uniform_style_bom(
+            style_id,
+            material_type,
+            material_name,
+            material_spec,
+            material_composition,
+            dosage,
+            dosage_unit,
+            supplier_id,
+            trace_required,
+            sort_order,
+            remark,
+            create_time,
+            update_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.styleId},
+                #{item.materialType},
+                #{item.materialName},
+                #{item.materialSpec},
+                #{item.materialComposition},
+                #{item.dosage},
+                #{item.dosageUnit},
+                #{item.supplierId},
+                #{item.traceRequired},
+                #{item.sortOrder},
+                #{item.remark},
+                sysdate(),
+                sysdate()
+            )
+        </foreach>
+    </insert>
+
+</mapper>

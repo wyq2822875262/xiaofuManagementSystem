@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformTraceCodeMapper">
+
+    <resultMap id="UniformTraceCodeResult" type="com.xiaofu.system.domain.uniform.UniformTraceCode">
+        <id property="traceId" column="trace_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="workOrderNo" column="work_order_no"/>
+        <result property="inspectionId" column="inspection_id"/>
+        <result property="styleName" column="style_name"/>
+        <result property="batchNo" column="batch_no"/>
+        <result property="codeMode" column="code_mode"/>
+        <result property="serialNo" column="serial_no"/>
+        <result property="traceCode" column="trace_code"/>
+        <result property="qrContent" column="qr_content"/>
+        <result property="printStatus" column="print_status"/>
+        <result property="traceStatus" column="trace_status"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateBy" column="update_by"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <sql id="selectTraceCodeVo">
+        select
+            t.trace_id,
+            t.work_order_id,
+            w.work_order_no,
+            t.inspection_id,
+            s.style_name,
+            b.batch_no,
+            t.code_mode,
+            t.serial_no,
+            t.trace_code,
+            t.qr_content,
+            t.print_status,
+            t.trace_status,
+            t.create_by,
+            t.create_time,
+            t.update_by,
+            t.update_time,
+            t.remark
+        from xf_trace_code t
+        left join xf_work_order w on t.work_order_id = w.work_order_id
+        left join xf_uniform_style s on w.style_id = s.style_id
+        left join xf_material_batch b on w.material_batch_id = b.batch_id
+    </sql>
+
+    <select id="selectTraceCodeById" parameterType="Long" resultMap="UniformTraceCodeResult">
+        <include refid="selectTraceCodeVo"/>
+        where t.trace_id = #{traceId}
+    </select>
+
+    <select id="selectTraceCodeByTraceCode" parameterType="String" resultMap="UniformTraceCodeResult">
+        <include refid="selectTraceCodeVo"/>
+        where t.trace_code = #{traceCode}
+        limit 1
+    </select>
+
+    <select id="selectTraceCodeList" parameterType="com.xiaofu.system.domain.uniform.UniformTraceCode" resultMap="UniformTraceCodeResult">
+        <include refid="selectTraceCodeVo"/>
+        <where>
+            <if test="workOrderId != null">
+                and t.work_order_id = #{workOrderId}
+            </if>
+            <if test="workOrderNo != null and workOrderNo != ''">
+                and w.work_order_no like concat('%', #{workOrderNo}, '%')
+            </if>
+            <if test="traceCode != null and traceCode != ''">
+                and t.trace_code like concat('%', #{traceCode}, '%')
+            </if>
+            <if test="codeMode != null and codeMode != ''">
+                and t.code_mode = #{codeMode}
+            </if>
+            <if test="printStatus != null and printStatus != ''">
+                and t.print_status = #{printStatus}
+            </if>
+            <if test="traceStatus != null and traceStatus != ''">
+                and t.trace_status = #{traceStatus}
+            </if>
+            <if test="params.beginTime != null and params.beginTime != ''">
+                and date_format(t.create_time,'%Y%m%d') &gt;= date_format(#{params.beginTime},'%Y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''">
+                and date_format(t.create_time,'%Y%m%d') &lt;= date_format(#{params.endTime},'%Y%m%d')
+            </if>
+        </where>
+        order by t.create_time desc, t.trace_id asc
+    </select>
+
+    <select id="selectAvailableTraceOptions" resultMap="UniformTraceCodeResult">
+        <include refid="selectTraceCodeVo"/>
+        where t.trace_status = '0'
+        order by t.create_time desc, t.trace_id desc
+    </select>
+
+    <select id="countTraceCodeByWorkOrderId" parameterType="Long" resultType="int">
+        select count(1) from xf_trace_code where work_order_id = #{workOrderId} and trace_status = '0'
+    </select>
+
+    <insert id="batchInsertTraceCode">
+        insert into xf_trace_code(
+            work_order_id,
+            inspection_id,
+            code_mode,
+            serial_no,
+            trace_code,
+            qr_content,
+            print_status,
+            trace_status,
+            create_by,
+            create_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.workOrderId},
+                #{item.inspectionId},
+                #{item.codeMode},
+                #{item.serialNo},
+                #{item.traceCode},
+                #{item.qrContent},
+                #{item.printStatus},
+                #{item.traceStatus},
+                #{item.createBy},
+                sysdate()
+            )
+        </foreach>
+    </insert>
+
+    <delete id="deleteTraceCodeByIds" parameterType="Long">
+        delete from xf_trace_code where trace_id in
+        <foreach collection="array" item="traceId" open="(" separator="," close=")">
+            #{traceId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteTraceCodeByWorkOrderIds" parameterType="Long">
+        delete from xf_trace_code where work_order_id in
+        <foreach collection="array" item="workOrderId" open="(" separator="," close=")">
+            #{workOrderId}
+        </foreach>
+    </delete>
+
+    <select id="selectWorkOrderIdsByTraceIds" parameterType="Long" resultType="long">
+        select distinct work_order_id from xf_trace_code where trace_id in
+        <foreach collection="array" item="traceId" open="(" separator="," close=")">
+            #{traceId}
+        </foreach>
+    </select>
+
+</mapper>

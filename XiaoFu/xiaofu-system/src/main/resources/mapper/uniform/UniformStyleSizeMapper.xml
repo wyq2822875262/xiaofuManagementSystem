@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformStyleSizeMapper">
+
+    <resultMap id="UniformStyleSizeResult" type="com.xiaofu.system.domain.uniform.UniformStyleSize">
+        <id property="sizeId" column="size_id"/>
+        <result property="styleId" column="style_id"/>
+        <result property="sizeCode" column="size_code"/>
+        <result property="sizeName" column="size_name"/>
+        <result property="specialType" column="special_type"/>
+        <result property="heightMin" column="height_min"/>
+        <result property="heightMax" column="height_max"/>
+        <result property="weightMin" column="weight_min"/>
+        <result property="weightMax" column="weight_max"/>
+        <result property="sortOrder" column="sort_order"/>
+    </resultMap>
+
+    <select id="selectStyleSizeListByStyleId" parameterType="Long" resultMap="UniformStyleSizeResult">
+        select
+            size_id,
+            style_id,
+            size_code,
+            size_name,
+            special_type,
+            height_min,
+            height_max,
+            weight_min,
+            weight_max,
+            sort_order
+        from xf_uniform_style_size
+        where style_id = #{styleId}
+        order by sort_order asc, size_id asc
+    </select>
+
+    <delete id="deleteStyleSizeByStyleIds" parameterType="Long">
+        delete from xf_uniform_style_size where style_id in
+        <foreach collection="array" item="styleId" open="(" separator="," close=")">
+            #{styleId}
+        </foreach>
+    </delete>
+
+    <delete id="deleteStyleSizeByStyleId" parameterType="Long">
+        delete from xf_uniform_style_size where style_id = #{styleId}
+    </delete>
+
+    <insert id="batchInsertStyleSize">
+        insert into xf_uniform_style_size(
+            style_id,
+            size_code,
+            size_name,
+            special_type,
+            height_min,
+            height_max,
+            weight_min,
+            weight_max,
+            sort_order,
+            create_time,
+            update_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.styleId},
+                #{item.sizeCode},
+                #{item.sizeName},
+                #{item.specialType},
+                #{item.heightMin},
+                #{item.heightMax},
+                #{item.weightMin},
+                #{item.weightMax},
+                #{item.sortOrder},
+                sysdate(),
+                sysdate()
+            )
+        </foreach>
+    </insert>
+
+</mapper>

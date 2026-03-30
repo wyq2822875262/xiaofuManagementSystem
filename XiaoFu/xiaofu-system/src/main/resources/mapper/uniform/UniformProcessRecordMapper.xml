@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaofu.system.mapper.uniform.UniformProcessRecordMapper">
+
+    <resultMap id="UniformProcessRecordResult" type="com.xiaofu.system.domain.uniform.UniformProcessRecord">
+        <id property="recordId" column="record_id"/>
+        <result property="workOrderId" column="work_order_id"/>
+        <result property="processType" column="process_type"/>
+        <result property="operatorName" column="operator_name"/>
+        <result property="inspectorName" column="inspector_name"/>
+        <result property="deviceType" column="device_type"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="passQuantity" column="pass_quantity"/>
+        <result property="defectiveQuantity" column="defective_quantity"/>
+        <result property="remark" column="remark"/>
+    </resultMap>
+
+    <select id="selectProcessListByWorkOrderId" parameterType="Long" resultMap="UniformProcessRecordResult">
+        select
+            record_id,
+            work_order_id,
+            process_type,
+            operator_name,
+            inspector_name,
+            device_type,
+            start_time,
+            end_time,
+            pass_quantity,
+            defective_quantity,
+            remark
+        from xf_process_record
+        where work_order_id = #{workOrderId}
+        order by start_time asc, record_id asc
+    </select>
+
+    <delete id="deleteProcessByWorkOrderId" parameterType="Long">
+        delete from xf_process_record where work_order_id = #{workOrderId}
+    </delete>
+
+    <delete id="deleteProcessByWorkOrderIds" parameterType="Long">
+        delete from xf_process_record where work_order_id in
+        <foreach collection="array" item="workOrderId" open="(" separator="," close=")">
+            #{workOrderId}
+        </foreach>
+    </delete>
+
+    <insert id="batchInsertProcess">
+        insert into xf_process_record(
+            work_order_id,
+            process_type,
+            operator_name,
+            inspector_name,
+            device_type,
+            start_time,
+            end_time,
+            pass_quantity,
+            defective_quantity,
+            remark,
+            create_time
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.workOrderId},
+                #{item.processType},
+                #{item.operatorName},
+                #{item.inspectorName},
+                #{item.deviceType},
+                #{item.startTime},
+                #{item.endTime},
+                #{item.passQuantity},
+                #{item.defectiveQuantity},
+                #{item.remark},
+                sysdate()
+            )
+        </foreach>
+    </insert>
+
+</mapper>
